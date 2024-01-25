@@ -77,7 +77,10 @@ export async function getSettings(options: Options = {}): Promise<Settings> {
     const relativePath = pathToFileURL(resolve(process.cwd(), path)).href;
 
     try {
-      return (await import(relativePath)) as Settings;
+      const module = (await import(relativePath)) as {
+        default: Settings;
+      };
+      return module.default;
     } catch (e) {
       throw new Error(
         `Failed to import '${relativePath}'; error:\n    ${
@@ -94,13 +97,11 @@ export async function getSettings(options: Options = {}): Promise<Settings> {
       throw new Error(`Failed to import '${configFile}': file not found`);
     }
 
-    if (configFile.endsWith(".mjs")) {
-      throw new Error(
-        `ES module imports aren't currently supported, change your config extension to .cjs.`,
-      );
-    }
-
-    if (configFile.endsWith(".js") || configFile.endsWith(".cjs")) {
+    if (
+      configFile.endsWith(".js") ||
+      configFile.endsWith(".cjs") ||
+      configFile.endsWith(".mjs")
+    ) {
       return tryRequire(configFile);
     } else {
       return await getSettingsFromJSON(configFile);
